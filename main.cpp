@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cmath>
+#include <fstream>
 
 struct WeightedItem {
 public:
@@ -134,6 +135,37 @@ public:
 
     }
 
+    void setPriority(int index, int priority){
+
+        items[index].weight=priority;
+
+
+        WeightedItem l;
+        WeightedItem r;
+
+        do {
+
+            WeightedItem current = items[index];
+
+            l=getLeftChild(index);
+            r=getRightChild(index);
+
+            if (r.weight>current.weight){
+                items[index]=r;
+                index=2*index+2;
+                items[index]=current;
+            } else if (l.weight>current.weight){
+                items[index]=l;
+                index=2*index+1;
+                items[index]=current;
+            } else {
+                break;
+            }
+
+        } while (2*index+1<=size);
+
+    }
+
     virtual ~BinaryHeap() {
         delete items;
     }
@@ -148,6 +180,25 @@ void print_array(WeightedItem* b, int size){
 
 int main(){
 
+    /*BinaryHeap b(30000);
+
+
+    std::ifstream is("input.txt");
+
+    std::string command;
+
+    while (is>>command){
+        if (command=="ADD"){
+
+        } else if (command=="POP") {
+
+        } else if (command=="CHANGE") {
+
+        }
+    }
+
+    is.close();
+     */
     BinaryHeap b(6);
 
     b.insert(WeightedItem(25,"fs"));
@@ -165,16 +216,19 @@ int main(){
     b.insert(WeightedItem(55,"egfew"));
     print_array(b.items, b.size);
 
+    b.setPriority(0,10);
+
     b.insert(WeightedItem(534,"efew"));
     print_array(b.items, b.size);
 
     b.insert(WeightedItem(789,"4w4f"));
     print_array(b.items, b.size);
 
+    b.setPriority(0,200);
+
     for (int i=0; i<b.size; i++){
         WeightedItem w = b.popMax();
         std::cout<<"Max "<<w.weight<<" "<<w.s<<"   ";
         print_array(b.items, b.size);
     }
-
 }
