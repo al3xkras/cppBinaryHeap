@@ -1,53 +1,66 @@
 #include <iostream>
 #include <cmath>
 
-struct BinaryHeap {
+struct WeightedItem {
+public:
+    int weight;
+    std::string s;
 
+    WeightedItem() : weight(0), s(" ") {};
+    WeightedItem(int weight, std::string s) : weight(weight), s(std::move(s)) {}
+
+};
+struct BinaryHeap {
 public:
 
     int size;
-    int* elements;
+
+    WeightedItem* items;
 
     explicit BinaryHeap(int size){
         this->size=(int)(pow(2,ceil(log2(size)))-1);
-        elements = new int[this->size];
-        for (int i=0; i<this->size;i++)
-            elements[i]=0;
+        items = new WeightedItem[this->size];
     }
 
-    int getLeftChild(int index) const{
-        if (2*index+1>=size) return 0;
-        return elements[2*index+1];
+
+
+    WeightedItem getLeftChild(int index) const{
+        if (2*index+1>=size) {
+            return {-1,""};
+        }
+        return items[2 * index + 1];
     }
 
-    int getRightChild(int index) const{
-        if (2*index+2>=size) return 0;
-        return elements[2*index+2];
+    WeightedItem getRightChild(int index) const{
+        if (2*index+2>=size) {
+            return {-1,""};
+        }
+        return items[2 * index + 2];
     }
 
-    int popMax() const{
-        if (elements[0]==0)
-            return elements[0];
+    WeightedItem popMax() const{
+        if (items[0].weight == 0)
+            return items[0];
 
         int index = 0;
 
-        int max = elements[index];
-        elements[index]=0;
+        WeightedItem max = items[index];
+        items[index]=WeightedItem();
 
         while (index*2<size){
-            int l = getLeftChild(index);
-            int r = getRightChild(index);
+            WeightedItem l = getLeftChild(index);
+            WeightedItem r = getRightChild(index);
 
-            if (l==0 && r==0)
+            if (l.weight==0 && r.weight==0)
                 break;
 
-            if (r>=l){
-                elements[index]=elements[2*index+2];
-                elements[2*index+2]=0;
+            if (r.weight>=l.weight){
+                items[index]=items[2 * index + 2];
+                items[2 * index + 2]=WeightedItem();
                 index = 2*index+2;
             } else {
-                elements[index]=elements[2*index+1];
-                elements[2*index+1]=0;
+                items[index]=items[2 * index + 1];
+                items[2 * index + 1]=WeightedItem();
                 index = 2*index+1;
             }
         }
@@ -55,12 +68,12 @@ public:
         return max;
     }
 
-    void insert(int priority) const{
+    void insert(WeightedItem priority) const{
 
         int index = 0;
 
-        if (elements[0]==0){
-            elements[0]=priority;
+        if (items[0].weight == 0){
+            items[0]=priority;
             return;
         }
 
@@ -70,28 +83,28 @@ public:
         }
 
         bool left_side = false;
-        while (getRightChild(index)!=0 && getLeftChild(index)!=0){
+        while (getRightChild(index).weight!=0 && getLeftChild(index).weight!=0){
 
-            if (priority<=0) {
+            if (priority.weight<=0) {
                 break;
             }
 
-            if (priority>elements[index]){
-                int tmp = elements[index];
-                elements[index]=priority;
+            if (priority.weight > items[index].weight){
+                WeightedItem tmp = items[index];
+                items[index]=priority;
                 priority=tmp;
             }
 
-            int priority_r = getRightChild(index);
-            int priority_l = getLeftChild(index);
+            WeightedItem priority_r = getRightChild(index);
+            WeightedItem priority_l = getLeftChild(index);
 
-            if (priority > priority_r){
+            if (priority.weight > priority_r.weight){
                 index = 2*index+2;
-                elements[index] = priority;
+                items[index] = priority;
                 priority = priority_r;
-            } else if (priority > priority_l){
+            } else if (priority.weight > priority_l.weight){
                 index = 2*index+1;
-                elements[index] = priority;
+                items[index] = priority;
                 priority = priority_l;
             } else {
                 index = 2*index+2;
@@ -100,9 +113,9 @@ public:
             if (!left_side && index*2>size){
                 left_side = true;
                 index = 1;
-                if (priority>elements[index]){
-                    int tmp = elements[index];
-                    elements[index]=priority;
+                if (priority.weight > items[index].weight){
+                    WeightedItem tmp = items[index];
+                    items[index]=priority;
                     priority=tmp;
                 }
                 continue;
@@ -113,22 +126,22 @@ public:
 
         }
 
-        if (getRightChild(index)==0){
-            elements[2*index+2]=priority;
-        } else if (getLeftChild(index)==0){
-            elements[2*index+1]=priority;
+        if (getRightChild(index).weight==0){
+            items[2 * index + 2]=priority;
+        } else if (getLeftChild(index).weight==0){
+            items[2 * index + 1]=priority;
         }
 
     }
 
     virtual ~BinaryHeap() {
-        delete elements;
+        delete items;
     }
 };
 
-void print_array(int* b, int size){
+void print_array(WeightedItem* b, int size){
     for (int i=0;i<size;i++){
-        std::cout<<b[i]<<" ";
+        std::cout<<" ["<<b[i].weight<<" "<<b[i].s<<"] ";
     }
     std::cout<<std::endl;
 }
@@ -137,31 +150,31 @@ int main(){
 
     BinaryHeap b(6);
 
-    b.insert(25);
-    print_array(b.elements,b.size);
+    b.insert(WeightedItem(25,"fs"));
+    print_array(b.items, b.size);
 
-    b.insert(5);
-    print_array(b.elements,b.size);
+    b.insert(WeightedItem(32,"weffeg"));
+    print_array(b.items, b.size);
 
-    b.insert(25);
-    print_array(b.elements,b.size);
+    b.insert(WeightedItem(2,"ewgaaa"));
+    print_array(b.items, b.size);
 
-    b.insert(10);
-    print_array(b.elements,b.size);
+    b.insert(WeightedItem(1,"gwaeeegw"));
+    print_array(b.items, b.size);
 
-    b.insert(30);
-    print_array(b.elements,b.size);
+    b.insert(WeightedItem(55,"egfew"));
+    print_array(b.items, b.size);
 
-    b.insert(40);
-    print_array(b.elements,b.size);
+    b.insert(WeightedItem(534,"efew"));
+    print_array(b.items, b.size);
 
-    b.insert(4);
-    print_array(b.elements,b.size);
+    b.insert(WeightedItem(789,"4w4f"));
+    print_array(b.items, b.size);
 
     for (int i=0; i<b.size; i++){
-        std::cout<<"Max "<<b.popMax()<<"   ";
-        print_array(b.elements,b.size);
+        WeightedItem w = b.popMax();
+        std::cout<<"Max "<<w.weight<<" "<<w.s<<"   ";
+        print_array(b.items, b.size);
     }
 
-    std::cout<<b.getLeftChild(0)<<std::endl;
 }
