@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cmath>
-#include <fstream>
+
+
 
 struct WeightedItem {
 public:
@@ -10,164 +11,12 @@ public:
     WeightedItem() : weight(0), s(" ") {};
     WeightedItem(int weight, std::string s) : weight(weight), s(std::move(s)) {}
 
-};
-struct BinaryHeap {
-public:
-
-    int size;
-
-    WeightedItem* items;
-
-    explicit BinaryHeap(int size){
-        this->size=(int)(pow(2,ceil(log2(size)))-1);
-        items = new WeightedItem[this->size];
+    bool operator==(const WeightedItem &rhs) const {
+        return weight == rhs.weight;
     }
 
-
-
-    WeightedItem getLeftChild(int index) const{
-        if (2*index+1>=size) {
-            return {-1,""};
-        }
-        return items[2 * index + 1];
-    }
-
-    WeightedItem getRightChild(int index) const{
-        if (2*index+2>=size) {
-            return {-1,""};
-        }
-        return items[2 * index + 2];
-    }
-
-    WeightedItem popMax() const{
-        if (items[0].weight == 0)
-            return items[0];
-
-        int index = 0;
-
-        WeightedItem max = items[index];
-        items[index]=WeightedItem();
-
-        while (index*2<size){
-            WeightedItem l = getLeftChild(index);
-            WeightedItem r = getRightChild(index);
-
-            if (l.weight==0 && r.weight==0)
-                break;
-
-            if (r.weight>=l.weight){
-                items[index]=items[2 * index + 2];
-                items[2 * index + 2]=WeightedItem();
-                index = 2*index+2;
-            } else {
-                items[index]=items[2 * index + 1];
-                items[2 * index + 1]=WeightedItem();
-                index = 2*index+1;
-            }
-        }
-
-        return max;
-    }
-
-    void insert(WeightedItem priority) const{
-
-        int index = 0;
-
-        if (items[0].weight == 0){
-            items[0]=priority;
-            return;
-        }
-
-        if (size<=1) {
-            std::cerr << "[BinaryHeap is full] " << std::endl;
-            throw std::exception();
-        }
-
-        bool left_side = false;
-        while (getRightChild(index).weight!=0 && getLeftChild(index).weight!=0){
-
-            if (priority.weight<=0) {
-                break;
-            }
-
-            if (priority.weight > items[index].weight){
-                WeightedItem tmp = items[index];
-                items[index]=priority;
-                priority=tmp;
-            }
-
-            WeightedItem priority_r = getRightChild(index);
-            WeightedItem priority_l = getLeftChild(index);
-
-            if (priority.weight > priority_r.weight){
-                index = 2*index+2;
-                items[index] = priority;
-                priority = priority_r;
-            } else if (priority.weight > priority_l.weight){
-                index = 2*index+1;
-                items[index] = priority;
-                priority = priority_l;
-            } else {
-                index = 2*index+2;
-            }
-
-            if (!left_side && index*2>size){
-                left_side = true;
-                index = 1;
-                if (priority.weight > items[index].weight){
-                    WeightedItem tmp = items[index];
-                    items[index]=priority;
-                    priority=tmp;
-                }
-                continue;
-            } else if (index*2>size){
-                std::cerr<<"[BinaryHeap is full] ";
-                throw std::exception();
-            }
-
-        }
-
-        if (getRightChild(index).weight==0){
-            items[2 * index + 2]=priority;
-        } else if (getLeftChild(index).weight==0){
-            items[2 * index + 1]=priority;
-        }
-
-    }
-
-    void setPriority(int index, int priority){
-
-        items[index].weight=priority;
-
-
-        WeightedItem l;
-        WeightedItem r;
-
-        do {
-
-            WeightedItem current = items[index];
-
-            l=getLeftChild(index);
-            r=getRightChild(index);
-
-            if (r.weight>current.weight){
-                items[index]=r;
-                index=2*index+2;
-                items[index]=current;
-            } else if (l.weight>current.weight){
-                items[index]=l;
-                index=2*index+1;
-                items[index]=current;
-            } else {
-                break;
-            }
-
-        } while (2*index+1<=size);
-
-    }
-
-    virtual ~BinaryHeap() {
-        delete items;
+    bool operator!=(const WeightedItem &rhs) const {
+        return !(rhs == *this);
     }
 };
 
@@ -177,6 +26,208 @@ void print_array(WeightedItem* b, int size){
     }
     std::cout<<std::endl;
 }
+
+struct BinaryHeap {
+public:
+
+    WeightedItem none{-1,""};
+    WeightedItem zero{0,""};
+
+    int size;
+    WeightedItem* items;
+
+    explicit BinaryHeap(int size){
+        this->size=(int)(pow(2,ceil(log2(size)))-1);
+        items = new WeightedItem[this->size];
+        for (int i=0;i<this->size;i++){
+            items[i]=zero;
+        }
+    }
+
+    static int rightIndex(int index){
+        return 2*index+2;
+    }
+
+    static int leftIndex(int index){
+        return 2*index+1;
+    }
+
+    static bool isLeftChild(int index){
+        return (index&1)==1;
+    }
+
+    static bool isRightChild(int index){
+        return (index&1)==0;
+    }
+
+    static int parentIndex(int index){
+        return ((index&1) == 0)
+            ? index/2-1
+            : index/2;
+    }
+
+    WeightedItem& get(int index){
+        if (index>=size){
+            return none;
+        } else if (items[index].weight==0){
+            return zero;
+        }
+        return items[index];
+    }
+
+    WeightedItem& getLeftChild(int index){
+        int i = leftIndex(index);
+        if (i>=size) {
+            return none;
+        }
+        return items[i];
+    }
+
+    WeightedItem& getRightChild(int index){
+        int i = rightIndex(index);
+        if (i>=size) {
+            return (none);
+        }
+        return items[i];
+    }
+
+    WeightedItem& getParent(int index){
+        if (index==0){
+            return none;
+        }
+        return items[parentIndex(index)];
+    }
+
+    bool checkAndSwap(int index, WeightedItem* item) const{
+        if (index>size) return false;
+        if ((*item).weight>items[index].weight){
+            WeightedItem tmp = items[index];
+            items[index]=*item;
+            (*item) = tmp;
+            return true;
+        }
+        return false;
+    }
+
+    void insert(WeightedItem& item) {
+
+        int index = 0;
+
+        while (item!=zero) {
+
+            WeightedItem current = get(index);
+
+            if (current==none){
+
+                index = parentIndex(index);
+
+                if (isRightChild(index)){
+                    index = leftIndex(parentIndex(index));
+                } else {
+
+                    while (isLeftChild(index)){
+                        index = parentIndex(index);
+                    }
+                    index = leftIndex(parentIndex(index));
+
+                }
+
+                checkAndSwap(index, &item);
+
+                if (get(index)==none){
+                    std::cerr<<"full";
+                    return;
+                }
+
+                continue;
+
+            } else if (current==zero) {
+                items[index]=item;
+                break;
+            }
+
+            checkAndSwap(index, &item);
+            checkAndSwap(rightIndex(index), &item);
+            checkAndSwap(leftIndex(index), &item);
+
+            index = rightIndex(index);
+        }
+    }
+
+    void setPriority(int index, int priority){
+
+        WeightedItem current = get(index);
+
+        if (current==none || current==zero){
+            std::cerr<<"\nno item with index "<<index<<" found\n";
+            return;
+        }
+
+        if (size==1 || index==0 && getLeftChild(0)==zero && getRightChild(0)==zero){
+            items[0].weight=priority;
+            return;
+        }
+
+        current.weight = priority;
+
+        WeightedItem parent;
+        WeightedItem left;
+        WeightedItem right;
+
+        do {
+
+            parent = getParent(index);
+            left = getLeftChild(index);
+            right = getRightChild(index);
+
+            if (parent!=none && current.weight>parent.weight) {
+
+                items[index] = parent;
+                index = parentIndex(index);
+
+            } else if ( (right!=none && right.weight > current.weight) ||
+                        (left!=none && left.weight > current.weight) ){
+
+                if ( left!=none && (right==none || left.weight>right.weight) ){
+                    items[index] = left;
+                    index = leftIndex(index);
+                } else {
+                    items[index] = right;
+                    index = rightIndex(index);
+                }
+
+            } else {
+
+                break;
+
+            }
+
+            items[index]=current;
+
+        } while (true);
+
+
+    }
+
+    WeightedItem popMax() {
+
+        WeightedItem max = get(0);
+
+        WeightedItem max_copy{max.weight,max.s};
+
+        setPriority(0,0);
+
+        if (max.weight==0){
+            std::cerr<<"binary heap is empty";
+            throw std::exception();
+        }
+
+        return max_copy;
+    }
+
+};
+
+
 
 int main(){
 
@@ -189,46 +240,51 @@ int main(){
 
     while (is>>command){
         if (command=="ADD"){
+            std::string s;
+            is>>s;
+
+            int p;
+            is>>p;
+
+            b.insert({p,s});
 
         } else if (command=="POP") {
-
+            WeightedItem item = b.popMax();
+            std::cout<<item.s<<" "<<item.weight<<std::endl;
         } else if (command=="CHANGE") {
+            std::string str;
+            is >> str;
 
+            int priority;
+            is >> priority;
+            int i;
+            for (i=0; i<b.size; i++){
+                if (b.items[i].s == str) break;
+            }
+            b.setPriority(i, priority);
         }
-    }
 
-    is.close();
-     */
-    BinaryHeap b(6);
+        //print_array(b.items,3);
+    }*/
 
-    b.insert(WeightedItem(25,"fs"));
-    print_array(b.items, b.size);
-
-    b.insert(WeightedItem(32,"weffeg"));
-    print_array(b.items, b.size);
-
-    b.insert(WeightedItem(2,"ewgaaa"));
-    print_array(b.items, b.size);
-
-    b.insert(WeightedItem(1,"gwaeeegw"));
-    print_array(b.items, b.size);
-
-    b.insert(WeightedItem(55,"egfew"));
-    print_array(b.items, b.size);
-
-    b.setPriority(0,10);
-
-    b.insert(WeightedItem(534,"efew"));
-    print_array(b.items, b.size);
-
-    b.insert(WeightedItem(789,"4w4f"));
-    print_array(b.items, b.size);
-
-    b.setPriority(0,200);
+    //is.close();
+    BinaryHeap b(512);
 
     for (int i=0; i<b.size; i++){
-        WeightedItem w = b.popMax();
-        std::cout<<"Max "<<w.weight<<" "<<w.s<<"   ";
-        print_array(b.items, b.size);
+        WeightedItem w = WeightedItem(i/2 + 10 + i*i +1,"");
+        b.insert(w);
+        //b.setPriority(i/2 + i/3,2*i+34);
+        //print_array(b.items,b.size);
+        //std::cout<<(5+i)*204 + i/2 + i*i<<std::endl;
     }
+
+    WeightedItem w = WeightedItem(3451,"");
+
+    for (int i=0; i<b.size; i++){
+        WeightedItem max = b.popMax();
+
+        std::cout<<max.weight<<" "<<max.s<<std::endl;
+        //print_array(b.items,b.size);
+    }
+
 }
